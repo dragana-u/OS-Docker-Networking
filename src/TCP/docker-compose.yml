@@ -1,0 +1,54 @@
+version: '3'
+
+services:
+  tcp-server:
+    build:
+      context: TCP
+      dockerfile: ../TCP/Dockerfile-TCPServer
+    environment:
+      - SERVER_PORT=7500
+    networks:
+      - tcp-network
+
+  udp-server:
+    build:
+      context: UDP
+      dockerfile: ../UDP/Dockerfile-UDPServer
+    networks:
+      - udp-network
+    environment:
+        - SERVER_PORT=4445
+
+  tcp-client:
+    build:
+      context: TCP
+      dockerfile: ../TCP/Dockerfile-TCPClient
+    environment:
+      - SERVER_PORT=7500
+      - SERVER_NAME=tcp-server
+    networks:
+      - tcp-network
+    depends_on:
+      - tcp-server
+    deploy:
+      replicas: 5
+
+  udp-client:
+    build:
+      context: UDP
+      dockerfile: ../UDP/Dockerfile-UDPClient
+    environment:
+      - SERVER_PORT=4445
+      - SERVER_NAME=udp-server
+    networks:
+      - udp-network
+    depends_on:
+      - udp-server
+    deploy:
+      replicas: 5
+
+networks:
+  tcp-network:
+    driver: bridge
+  udp-network:
+    driver: bridge

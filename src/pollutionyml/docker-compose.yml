@@ -1,0 +1,31 @@
+version: '3'
+services:
+  soundlevel:
+    build:
+      context: ../soundsensor
+      dockerfile: Dockerfile
+    volumes:
+      - ../soundsensor/soundlevel.txt:/usr/src/myapp/soundlevel.txt
+    networks:
+      - city-noisepollution-network
+  noisepollution:
+    build:
+      context: ../soundmonitor
+      dockerfile: Dockerfile
+    volumes:
+      - ../soundmonitor/noisepollution.txt:/usr/src/myapp/noisepollution.txt
+      - ../soundsensor/soundlevel.txt:/usr/src/myapp/soundlevel.txt
+    networks:
+      - city-noisepollution-network
+    depends_on:
+      - soundlevel
+    environment:
+      - LOW_SOUNDLEVEL=40
+      - MEDIUM_SOUNDLEVEL=60
+      - HIGH_SOUNDLEVEL=80
+volumes:
+  soundLevel:
+  noisepollution:
+networks:
+  city-noisepollution-network:
+    driver: bridge

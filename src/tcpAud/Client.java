@@ -4,44 +4,77 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.Random;
 
-public class Client extends Thread{
-    private InetAddress serverAddress;
+public class Client extends Thread {
     private int serverPort;
+    private String serverName;
 
-    public Client(InetAddress address, int port) {
-        this.serverAddress = address;
-        this.serverPort = port;
+    public Client(String serverName, int serverPort) {
+        this.serverName = serverName;
+        this.serverPort = serverPort;
     }
 
     @Override
     public void run() {
         Socket socket = null;
-        Random random = new Random();
+        BufferedReader reader = null;
+        BufferedWriter writer = null;
         try {
-            socket = new Socket(serverAddress, serverPort);
-            BufferedReader  bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            String method = random.nextInt(10) % 2 == 0 ? "GET" : "POST";
-            String l = method + " /movies/ " + random.nextInt(100) +  " HTTP/1.1\n";
-            bufferedWriter.write(l);
-            bufferedWriter.write("User: FINKI\n");
-            bufferedWriter.flush();
-            String line = bufferedReader.readLine();
-            while (line != null) {
-                System.out.println("The server sent:" + line);
-                line = bufferedReader.readLine();
+            socket = new Socket(InetAddress.getByName(this.serverName), this.serverPort);
+
+            reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+
+            writer.write("GET / HTTP/1.1\n");
+            writer.write("Host: developer.mozilla.org\n");
+            writer.write("User-Agent: OSClient\n");
+            writer.write("\n");
+            writer.flush();
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                System.out.println("Client received: " + line);
             }
-            System.out.println("Done");
-            socket.close();
+
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (writer != null) {
+                try {
+                    writer.flush();
+                    writer.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+            if (socket != null) {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
         }
     }
 
-    public static void main(String[] args) throws UnknownHostException {
-        Client clinet = new Client(InetAddress.getLocalHost(), 5000);
-        clinet.start();
+    public static void main(String[] args) {
+        String serverName = System.getenv("SERVER_NAME");
+        String serverPort = System.getenv("SERVER_PORT");
+        if (serverPort == null) {
+            throw new RuntimeException("Server port should be defined as ENV {SERVER_PORT}.");
+        }
+        Client client = new Client(serverName, Integer.parseInt(serverPort));
+        client.start();
     }
 }

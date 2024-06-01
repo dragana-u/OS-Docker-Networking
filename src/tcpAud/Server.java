@@ -5,36 +5,42 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Server extends Thread{
+
     private int port;
-    public Server(int port){
+
+    public Server(int port) {
         this.port = port;
     }
 
     @Override
     public void run() {
-        System.out.println("Starting the server...");
+        System.out.println("SERVER: staring...");
         ServerSocket serverSocket = null;
         try {
-           serverSocket = new ServerSocket(port);
+            serverSocket = new ServerSocket(this.port);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            System.err.println(e.getMessage());
+            return;
         }
-        System.out.println("Server started");
-        while(true){
+        System.out.println("SERVER: started!");
+        System.out.println("SERVER: waiting for connections...");
+
+        while (true) {
+            Socket socket = null;
             try {
-                Socket client = serverSocket.accept();
-                System.out.println("client connected");
-                System.out.println(client.getInetAddress() + " " + client.getPort());
-                new Worker(client).start();
+                //accept metodot e blokiracki
+                socket = serverSocket.accept();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                e.printStackTrace();
             }
+            System.out.println("SERVER: new client");
+            new Worker(socket).start();
         }
 
     }
 
     public static void main(String[] args) {
-        Server server = new Server(5000);
+        Server server = new Server(7000);
         server.start();
     }
 }
